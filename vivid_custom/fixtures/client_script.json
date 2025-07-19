@@ -108,5 +108,27 @@
   "name": "payment",
   "script": "frappe.ui.form.on('Sales Invoice', {\n    validate: function(frm) {\n        if (frm.doc.is_pos === 1) {\n            if (!frm.doc.custom_attach_payment_documents_here) {\n                frappe.throw(__('Please attach payment documents before submitting the invoice.'));\n            }\n        }\n    }\n});\n",
   "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Order",
+  "enabled": 1,
+  "modified": "2025-07-19 20:36:00.249245",
+  "module": null,
+  "name": "Auto fill sales person",
+  "script": "frappe.ui.form.on('Sales Order', {\n    onload: function(frm) {\n        // Check if Sales Team table is empty\n        if (!frm.doc.sales_team || frm.doc.sales_team.length === 0) {\n\n            // Get the current logged-in user\n            let currentUser = frappe.session.user;\n\n            // Find if this user has a Sales Person record\n            frappe.call({\n                method: 'frappe.client.get_value',\n                args: {\n                    doctype: 'Sales Person',\n                    filters: { custom_user_id: currentUser },\n                    fieldname: 'name'\n                },\n                callback: function(r) {\n                    if (r.message && r.message.name) {\n                        // Add new row to Sales Team\n                        let row = frm.add_child('sales_team');\n                        row.sales_person = r.message.name;\n                        row.allocated_percentage = 100;  // Optional: set allocation\n                        refresh_field('sales_team');\n                    }\n                }\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Invoice",
+  "enabled": 1,
+  "modified": "2025-07-19 20:37:06.861702",
+  "module": null,
+  "name": "Auto fill sales person on invoce",
+  "script": "frappe.ui.form.on('Sales Invoice', {\n    onload: function(frm) {\n        // Check if Sales Team table is empty\n        if (!frm.doc.sales_team || frm.doc.sales_team.length === 0) {\n\n            // Get the current logged-in user\n            let currentUser = frappe.session.user;\n\n            // Find if this user has a Sales Person record\n            frappe.call({\n                method: 'frappe.client.get_value',\n                args: {\n                    doctype: 'Sales Person',\n                    filters: { custom_user_id: currentUser },\n                    fieldname: 'name'\n                },\n                callback: function(r) {\n                    if (r.message && r.message.name) {\n                        // Add new row to Sales Team\n                        let row = frm.add_child('sales_team');\n                        row.sales_person = r.message.name;\n                        row.allocated_percentage = 100;  // Optional: set allocation\n                        refresh_field('sales_team');\n                    }\n                }\n            });\n        }\n    }\n});\n",
+  "view": "Form"
  }
 ]
