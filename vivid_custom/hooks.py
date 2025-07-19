@@ -242,3 +242,32 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+
+
+fixtures = [
+    {
+        "dt": "Custom Field",
+    },
+    {
+        "dt": "Client Script",
+    },
+    {
+        "dt": "DocType",
+        "filters": [["module", "=", "Vivid Custom"]]
+    },
+    {
+        "dt": "Property Setter",
+    },
+    {
+        "dt": "Workflow",
+    },
+    {
+        "dt": "Workspace",
+    },
+    {
+        "dt":"Web Page"
+    },
+    {
+        "dt":"Print Format"
+    }
+]

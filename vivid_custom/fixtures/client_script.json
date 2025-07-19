@@ -1,0 +1,112 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Delivery Note",
+  "enabled": 1,
+  "modified": "2025-07-18 14:29:17.184297",
+  "module": null,
+  "name": "Create Get Pass from Delivery Note",
+  "script": "frappe.ui.form.on('Delivery Note', {\n    refresh(frm) {\n        if (frm.doc.docstatus === 1) {\n            frm.add_custom_button('Get Pass', async () => {\n                // Prepare the new Get Pass document\n                let get_pass_doc = {\n                    doctype: 'Get Pass',\n                    data: frm.doc.name,\n                    date: frappe.datetime.now_date(),\n                    delivery_note: frm.doc.name,\n                    //sales_person: frm.doc.sales_person || frm.doc.owner,\n                    items: []\n                };\n\n                // Add items from Delivery Note\n                frm.doc.items.forEach(row => {\n                    get_pass_doc.items.push({\n                        item_code: row.item_code,\n                        item_name: row.item_name,\n                        qty: row.qty,\n                        rate: row.rate,\n                        uom: row.uom,\n                        amount: row.amount\n                    });\n                });\n\n                // Insert the Get Pass doc\n                frappe.call({\n                    method: 'frappe.client.insert',\n                    args: {\n                        doc: get_pass_doc\n                    },\n                    callback: function (r) {\n                        if (!r.exc) {\n                            frappe.msgprint(__('Get Pass created'));\n                            frappe.set_route('Form', 'Get Pass', r.message.name);\n                        }\n                    }\n                });\n            }, 'Create');\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Stock Entry",
+  "enabled": 0,
+  "modified": "2025-07-01 15:24:06.692539",
+  "module": null,
+  "name": "max qty for contingency",
+  "script": "\r\nfrappe.ui.form.on('Stock Entry', {\r\n    validate: async function(frm) {\r\n        if (frm.doc.stock_entry_type !== \"Contingency\") return;\r\n\r\n        const limited_warehouses = [\"Mahlet - GTW\", \"Kindinew - GTW\", \"Nati - GTW\"];\r\n        const max_qty = 5;\r\n        let errors = [];\r\n\r\n        for (const item of frm.doc.items) {\r\n            const target_wh = item.t_warehouse;\r\n            if (!target_wh || !limited_warehouses.includes(target_wh)) continue;\r\n\r\n            const item_code = item.item_code;\r\n\r\n            let current_qty = 0;\r\n\r\n            // Using frappe.call to fetch Bin value more reliably\r\n            await frappe.call({\r\n                method: \"frappe.client.get_value\",\r\n                args: {\r\n                    doctype: \"Bin\",\r\n                    filters: {\r\n                        item_code: item_code,\r\n                        warehouse: target_wh\r\n                    },\r\n                    fieldname: \"actual_qty\"\r\n                },\r\n                callback: function(r) {\r\n                    if (r.message) {\r\n                        current_qty = r.message.actual_qty;\r\n                    }\r\n                }\r\n            });\r\n\r\n            const predicted_qty = current_qty + item.transfer_qty;\r\n\r\n            if (predicted_qty > max_qty) {\r\n                errors.push(\r\n                    `❌ ${item_code} in ${target_wh} will exceed allowed limit of ${max_qty}. ` +\r\n                    `Current: ${current_qty}, Transfer: ${item.transfer_qty}, After: ${predicted_qty}`\r\n                );\r\n            }\r\n        }\r\n\r\n        if (errors.length > 0) {\r\n            frappe.throw(\"🚫 Stock Transfer Blocked:\\n\\n\" + errors.join(\"\\n\\n\"));\r\n        }\r\n    }\r\n});\r\n\r\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Delivery Note",
+  "enabled": 1,
+  "modified": "2025-07-14 12:29:38.293186",
+  "module": null,
+  "name": "Put Bar Code in Delivery Note",
+  "script": "frappe.ui.form.on('Delivery Note', {\n    refresh(frm) {\n        if (frm.doc.name) {\n            frappe.require('https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js', function() {\n                const wrapper = frm.fields_dict.custom_bar_code.$wrapper;\n                wrapper.html('<svg id=\"barcode-svg\"></svg>');\n                \n\n                JsBarcode(\"#barcode-svg\", frm.doc.name, {\n                    format: \"CODE128\",\n                    width: 2,\n                    height: 50,\n                    displayValue: false  // 👈 hides the text under barcode\n                });\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Additional Salary",
+  "enabled": 1,
+  "modified": "2025-07-17 10:13:01.658395",
+  "module": null,
+  "name": "Addisional salary",
+  "script": "cur_frm.add_fetch(\"Employee\", \"ctc\", \"custom_salary\");\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n     custom_salary: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_normal_amount\", (d.custom_ot_normal_hour/208) * 1.5 * d.custom_salary);\r\n     }\r\n });\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n      custom_ot_normal_hour: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_normal_amount\", (d.custom_ot_normal_hour/208) * 1.5 * d.custom_salary);\r\n     }\r\n });\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n     custom_salary: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_knight_amount\", (d.custom_ot_knight_hour/208) * 1.75 * d.custom_salary);\r\n     }\r\n });\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n      custom_ot_knight_hour: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_knight_amount\", (d.custom_ot_knight_hour/208) * 1.75 * d.custom_salary);\r\n     }\r\n });\r\n\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n     custom_salary: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_sunday_amount\", (d.custom_ot_sunday_hour/208) * 2 * d.custom_salary);\r\n     }\r\n });\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n     custom_ot_sunday_hour: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_sunday_amount\", (d.custom_ot_sunday_hour/208) * 2 * d.custom_salary);\r\n     }\r\n });\r\n\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n     custom_salary: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_holiday_amount\", (d.custom_ot_holiday_hour/208) * 2.5 * d.custom_salary);\r\n     }\r\n });\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n    custom_ot_holiday_hour: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(cdt, cdn, \"custom_ot_holiday_amount\", (d.custom_ot_holiday_hour/208) * 2.5 * d.custom_salary);\r\n     }\r\n });\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n      custom_ot_normal_amount: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(d.doctype, d.name, 'custom_ot_total_in_birr', (d.custom_ot_normal_amount + d.custom_ot_knight_amount));\r\n     }\r\n });\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n     custom_ot_knight_amount: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(d.doctype, d.name, 'custom_ot_total_in_birr', (d.custom_ot_normal_amount + d.custom_ot_knight_amount));\r\n     }\r\n });\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n      custom_ot_sunday_amount: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(d.doctype, d.name, 'ot_total_2', (d.custom_ot_sunday_amount + d.custom_ot_holiday_amount));\r\n     }\r\n });\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n    custom_ot_holiday_amount: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(d.doctype, d.name, 'ot_total_2', (d.custom_ot_sunday_amount + d.custom_ot_holiday_amount));\r\n     }\r\n });\r\n\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n      ot_total_2: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(d.doctype, d.name, 'custom_overtime_total', (d.custom_ot_total_in_birr + d.ot_total_2));\r\n                frappe.model.set_value(d.doctype, d.name, 'amount', (d.custom_ot_total_in_birr + d.ot_total_2));\r\n     }\r\n });\r\n\r\n\r\nfrappe.ui.form.on(\"Additional Salary\", {\r\n     custom_ot_total_in_birr: function(frm, cdt, cdn) {\r\n        var d = locals[cdt][cdn];\r\n                frappe.model.set_value(d.doctype, d.name, 'custom_overtime_total', (d.custom_ot_total_in_birr + d.ot_total_2));\r\n                frappe.model.set_value(d.doctype, d.name, 'amount', (d.custom_ot_total_in_birr + d.ot_total_2));\r\n     }\r\n });\r\n\r\n\r\n\r\n// frappe.ui.form.on(\"Additional Salary\", {\r\n//      perdiem: function(frm, cdt, cdn) {\r\n//         var d = locals[cdt][cdn];\r\n//                 frappe.model.set_value(cdt, cdn, \"perdiem_in_birr\", (d.perdiem_no_of_days * d.perdiem));\r\n//                 frappe.model.set_value(cdt, cdn, \"amount\", (d.perdiem_no_of_days * d.perdiem));\r\n//      }\r\n//  });\r\n\r\n// frappe.ui.form.on(\"Additional Salary\", {\r\n//       perdiem_no_of_days: function(frm, cdt, cdn) {\r\n//         var d = locals[cdt][cdn];\r\n//                 frappe.model.set_value(cdt, cdn, \"perdiem_in_birr\", (d.perdiem_no_of_days * d.perdiem));\r\n//                 frappe.model.set_value(cdt, cdn, \"amount\", (d.perdiem_no_of_days * d.perdiem));\r\n//      }\r\n//  });\r\n\r\n\r\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Salary Structure Assignment",
+  "enabled": 1,
+  "modified": "2025-07-17 10:26:43.171685",
+  "module": null,
+  "name": "Get Base Salary",
+  "script": "frappe.ui.form.on('Salary Structure Assignment', {\n    salary_structure: async function(frm) {\n        if (frm.doc.salary_structure) {\n            let salary_structure = await frappe.db.get_doc('Salary Structure', frm.doc.salary_structure);\n            \n            let base_earning = (salary_structure.earnings || []).find(earning => earning.salary_component === 'Basic');\n            \n            if (base_earning) {\n                frm.set_value('base', base_earning.amount);\n            } else {\n                frm.set_value('base', 0);\n                frappe.msgprint('Basic salary component not found in the selected Salary Structure.');\n            }\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Additional Salary",
+  "enabled": 1,
+  "modified": "2025-07-17 16:56:26.343525",
+  "module": null,
+  "name": "Get basic salary in additional salary",
+  "script": "frappe.ui.form.on('Additional Salary', {\n    employee: async function(frm) {\n        if (frm.doc.employee) {\n            // Fetch Salary Structure Assignment for selected employee\n            let assignments = await frappe.db.get_list('Salary Structure Assignment', {\n                filters: {\n                    employee: frm.doc.employee\n                },\n                fields: ['salary_structure'],\n                limit: 1\n            });\n\n            console.log({ assignments });\n\n            if (assignments.length === 0) {\n                frm.set_value('base', 0);\n                frappe.msgprint('No Salary Structure Assignment found for this employee.');\n                return;\n            }\n\n            let salary_structure_name = assignments[0].salary_structure;\n            console.log({ salary_structure_name });\n\n            // Fetch the Salary Structure document\n            let salary_structure = await frappe.db.get_doc('Salary Structure', salary_structure_name);\n            console.log({ salary_structure });\n\n            // Find Basic salary component\n            let base_earning = (salary_structure.earnings || []).find(\n                earning => earning.salary_component === 'Basic'\n            );\n            console.log({ base_earning });\n\n            if (base_earning) {\n                frm.set_value('custom_salary', base_earning.amount);\n            } else {\n                frm.set_value('custom_salary', 0);\n                frappe.msgprint('Basic salary component not found in the Salary Structure.');\n            }\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Invoice",
+  "enabled": 1,
+  "modified": "2025-07-17 21:31:44.074566",
+  "module": null,
+  "name": "Allow Credit in Sales Invoice",
+  "script": "frappe.ui.form.on('Sales Invoice', {\n    customer: async function(frm) {\n        const customer = frm.doc.customer;\n        if (customer) {\n            let customer_doc = await frappe.db.get_doc('Customer', customer);\n            console.log({ customer_doc });\n\n            if (customer_doc.custom_is_credit_customer === 1) {\n                frm.set_value('is_pos', 0);\n            }\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Customer",
+  "enabled": 1,
+  "modified": "2025-07-17 22:21:22.899992",
+  "module": null,
+  "name": "Filter cities with teritory",
+  "script": "frappe.ui.form.on('Customer', {\n    territory: function(frm) {\n        // When territory field changes\n        if (frm.doc.territory) {\n            // Clear existing options in custom_city field\n            frm.set_query('custom_city', function() {\n                return {\n                    filters: {\n                        territory: frm.doc.territory  // Filter cities by selected territory\n                    }\n                };\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Get Pass",
+  "enabled": 1,
+  "modified": "2025-07-18 14:30:07.832110",
+  "module": null,
+  "name": "Update delivery note on getpass",
+  "script": "frappe.ui.form.on('Get Pass', {\r\n\ton_submit(frm) {\r\n\t\tif (frm.doc.delivery_note) {\r\n\t\t\tfrappe.db.set_value('Delivery Note', frm.doc.delivery_note, 'custom_delivery_note_created', 1)\r\n\t\t\t\t.then(() => {\r\n\t\t\t\t\tfrappe.msgprint(__('Delivery Note updated successfully.'));\r\n\t\t\t\t});\r\n\t\t}\r\n\t}\r\n});\r\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Invoice",
+  "enabled": 1,
+  "modified": "2025-07-18 14:44:00.786383",
+  "module": null,
+  "name": "payment",
+  "script": "frappe.ui.form.on('Sales Invoice', {\n    validate: function(frm) {\n        if (frm.doc.is_pos === 1) {\n            if (!frm.doc.custom_attach_payment_documents_here) {\n                frappe.throw(__('Please attach payment documents before submitting the invoice.'));\n            }\n        }\n    }\n});\n",
+  "view": "Form"
+ }
+]
