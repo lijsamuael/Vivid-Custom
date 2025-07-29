@@ -130,5 +130,16 @@
   "name": "Auto fill sales person on invoce",
   "script": "frappe.ui.form.on('Sales Invoice', {\n    onload: function(frm) {\n        // Check if Sales Team table is empty\n        if (!frm.doc.sales_team || frm.doc.sales_team.length === 0) {\n\n            // Get the current logged-in user\n            let currentUser = frappe.session.user;\n\n            // Find if this user has a Sales Person record\n            frappe.call({\n                method: 'frappe.client.get_value',\n                args: {\n                    doctype: 'Sales Person',\n                    filters: { custom_user_id: currentUser },\n                    fieldname: 'name'\n                },\n                callback: function(r) {\n                    if (r.message && r.message.name) {\n                        // Add new row to Sales Team\n                        let row = frm.add_child('sales_team');\n                        row.sales_person = r.message.name;\n                        row.allocated_percentage = 100;  // Optional: set allocation\n                        refresh_field('sales_team');\n                    }\n                }\n            });\n        }\n    }\n});\n",
   "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Invoice",
+  "enabled": 1,
+  "modified": "2025-07-21 21:17:29.489331",
+  "module": null,
+  "name": "Calculate Incentive Value",
+  "script": "frappe.ui.form.on('Sales Invoice', {\n    after_save: async function(frm) {\n        if (!frm.doc.customer) return;\n\n        // Fetch customer fields\n        await frappe.call({\n            method: \"frappe.client.get\",\n            args: {\n                doctype: \"Customer\",\n                name: frm.doc.customer\n            },\n            callback: function(response) {\n                const customer = response.message;\n                const credit_customer = customer.custom_is_credit_customer;\n                console.log({credit_customer})\n                const created_on = frappe.datetime.str_to_obj(customer.creation);\n                const cut_off_date = frappe.datetime.str_to_obj(\"2025-07-21\");\n\n                const total_qty = frm.doc.total_qty || 0;\n                console.log({total_qty})\n                const is_fs = (frm.doc.custom_reference_no);\n                console.log({is_fs})\n\n                // If credit customer, incentive = 0\n                if (credit_customer === 1) {\n                    frm.set_value('custom_incentive_value', 0);\n                    return;\n                }\n\n                const is_new_customer = created_on > cut_off_date;\n                console.log({is_new_customer})\n\n                let rate = 0;\n\n                if (is_new_customer) {\n                    rate = is_fs ? 10 : 15;\n                } else {\n                    rate = is_fs ? 3 : 5;\n                }\n\n                frm.set_value('custom_incentive_value', total_qty * rate);\n            }\n        });\n    }\n});\n",
+  "view": "Form"
  }
 ]

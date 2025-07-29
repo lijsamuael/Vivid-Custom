@@ -17978,7 +17978,7 @@
  },
  {
   "charts": [],
-  "content": "[{\"id\":\"-aJskSKfRc\",\"type\":\"paragraph\",\"data\":{\"text\":\"Delivery Notes\",\"col\":12}},{\"id\":\"GR34bDEjCi\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Delivery Note\",\"col\":12}}]",
+  "content": "[{\"id\":\"Sy5_REdLba\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Getachew Whole Sale Delivery Notes</b></span>\",\"col\":12}},{\"id\":\"GR34bDEjCi\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Created by Mahlet\",\"col\":6}},{\"id\":\"50VPqQi9gy\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Created by Kindinew\",\"col\":6}},{\"id\":\"q-A7jaM6Co\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Rediet Import Delivery Notes</b></span>\",\"col\":12}},{\"id\":\"ARAHffMoK4\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Delivery Note\",\"col\":12}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -17989,7 +17989,7 @@
   "is_hidden": 0,
   "label": "Get Pass Controller",
   "links": [],
-  "modified": "2025-07-18 14:33:49.135431",
+  "modified": "2025-07-22 11:52:32.181297",
   "module": null,
   "name": "Get Pass Controller",
   "number_cards": [],
@@ -17998,11 +17998,27 @@
   "quick_lists": [
    {
     "document_type": "Delivery Note",
+    "label": "Created by Mahlet",
+    "parent": "Get Pass Controller",
+    "parentfield": "quick_lists",
+    "parenttype": "Workspace",
+    "quick_list_filter": "[[\"Delivery Note\",\"status\",\"=\",\"To Bill\",false],[\"Delivery Note\",\"custom_delivery_note_created\",\"=\",0,false],[\"Sales Team\",\"sales_person\",\"=\",\"Mahlet\",false],[\"Delivery Note\",\"company\",\"=\",\"Getachew Tekle Wholesale\",false]]"
+   },
+   {
+    "document_type": "Delivery Note",
     "label": "Delivery Note",
     "parent": "Get Pass Controller",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
-    "quick_list_filter": "[[\"Delivery Note\",\"status\",\"=\",\"To Bill\",false],[\"Delivery Note\",\"custom_delivery_note_created\",\"=\",0,false]]"
+    "quick_list_filter": "[[\"Delivery Note\",\"company\",\"=\",\"Rediet Mesfin Import\",false],[\"Delivery Note\",\"status\",\"=\",\"To Bill\",false],[\"Delivery Note\",\"custom_delivery_note_created\",\"=\",0,false]]"
+   },
+   {
+    "document_type": "Delivery Note",
+    "label": "Created by Kindinew",
+    "parent": "Get Pass Controller",
+    "parentfield": "quick_lists",
+    "parenttype": "Workspace",
+    "quick_list_filter": "[[\"Delivery Note\",\"status\",\"=\",\"To Bill\",false],[\"Delivery Note\",\"custom_delivery_note_created\",\"=\",0,false],[\"Sales Team\",\"sales_person\",\"=\",\"Kindnew\",false],[\"Delivery Note\",\"company\",\"=\",\"Getachew Tekle Wholesale\",false]]"
    }
   ],
   "restrict_to_domain": null,
